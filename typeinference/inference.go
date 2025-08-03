@@ -1,20 +1,22 @@
 package typeinference
 
 import (
-	"fmt"
 	"maps"
 )
 
-var typeVarCounter = 0
+
 
 func Infer(context Context, expr Expr) (Type, []Constraint) {
 	switch e := expr.(type) {
 	case True:
 		return BoolType{}, nil
+
 	case False:
 		return BoolType{}, nil
+
 	case Zero:
 		return NatType{}, nil
+
 	case Succ:
 		tN, cN := Infer(context, e.N)
 		succConstraint := Constraint{Left: tN, Right: NatType{}}
@@ -23,18 +25,21 @@ func Infer(context Context, expr Expr) (Type, []Constraint) {
 		allConstraints = append(allConstraints, succConstraint)
 
 		return NatType{}, allConstraints
+
 	case Var:
 		t, ok := context[e.Name]
 		if !ok {
 			panic("Invalid expression")
 		}
 		return t, nil
+
 	case Abs:
 		newCtx := copyContext(context)
 		newCtx[e.Param] = e.ParamType
 		tBody, cBody := Infer(newCtx, e.Body)
 
 		return ArrowType{From: e.ParamType, To: tBody}, cBody
+
 	case If:
 		tCond, cCond := Infer(context, e.Cond)
 		tThen, cThen := Infer(context, e.Then)
@@ -49,6 +54,7 @@ func Infer(context Context, expr Expr) (Type, []Constraint) {
 		allConstraints = append(allConstraints, boolConstraint, branchConstraint)
 
 		return tThen, allConstraints
+
 	case App:
 		retType := FreshTypeVar()
 
@@ -62,6 +68,7 @@ func Infer(context Context, expr Expr) (Type, []Constraint) {
 		allConstraints = append(allConstraints, appConstraint)
 
 		return retType, allConstraints
+
 	default:
 		panic("Unknown expression")
 	}
@@ -73,7 +80,3 @@ func copyContext(context Context) Context {
 	return copiedContext
 }
 
-func FreshTypeVar() VarType {
-	typeVarCounter++
-	return VarType{Name: fmt.Sprintf("X%d", typeVarCounter)}
-}
